@@ -35,15 +35,126 @@ class VideoCallScreen : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = DataBindingUtil.setContentView(this, R.layout.activity_video_call_screen)
-        requestPermission()
 
+        /* Requesting Permissison*/
+        requestPermission()
 
 
         /* Initalize Agora*/
         initAgoraEngineAndJoinChannel()
 
 
+    }
 
+    private fun initAgoraEngineAndJoinChannel() {
+
+        joinChannel()
+        setVideoConfiguration()
+        initRtcEngine()
+        setLocalVideo()
+
+    }
+
+    private fun setLocalVideo() {
+
+        localView = RtcEngine.CreateRendererView(baseContext)
+        localView!!.setZOrderMediaOverlay(true)
+        binding.localVideoViewContainer.addView(localView)
+
+        rtcEngine?.setupLocalVideo(VideoCanvas(localView, VideoCanvas.RENDER_MODE_FILL, 0))
+    }
+
+    private fun setRemoteVideo(uid: Int) {
+
+        remoteView = RtcEngine.CreateRendererView(baseContext)
+        remoteView!!.setZOrderMediaOverlay(true)
+        binding.remoteVideoViewContainer.addView(remoteView)
+
+        rtcEngine?.setupRemoteVideo(VideoCanvas(remoteView, VideoCanvas.RENDER_MODE_FILL, uid))
+    }
+
+    private fun joinChannel() {
+
+        rtcEngine?.joinChannel(getString(R.string.TOKEN), "AgoraDemo", "Optional Data", 0)
+    }
+
+    private fun setVideoConfiguration() {
+        rtcEngine?.enableVideo()
+        rtcEngine?.setVideoEncoderConfiguration(
+            VideoEncoderConfiguration(
+                VD_640x480,
+                VideoEncoderConfiguration.FRAME_RATE.FRAME_RATE_FPS_1,
+                STANDARD_BITRATE,
+                VideoEncoderConfiguration.ORIENTATION_MODE.ORIENTATION_MODE_FIXED_PORTRAIT
+            )
+        )
+    }
+
+    private fun initRtcEngine() {
+
+        rtcEngine = RtcEngine.create(this, getString(R.string.APP_ID), mIrtcEventHandler)
+    }
+
+
+    val mIrtcEventHandler: IRtcEngineEventHandler = object : IRtcEngineEventHandler() {
+
+        override fun onJoinChannelSuccess(channel: String?, uid: Int, elapsed: Int) {
+            super.onJoinChannelSuccess(channel, uid, elapsed)
+
+            runOnUiThread {
+                Toast.makeText(
+                    this@VideoCallScreen,
+                    "Channel Join Success: $channel, uid: $uid",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        }
+
+        override fun onUserJoined(uid: Int, elapsed: Int) {
+            super.onUserJoined(uid, elapsed)
+            runOnUiThread {
+                setRemoteVideo(uid)
+            }
+        }
+
+//        override fun onFirstRemoteVideoDecoded(uid: Int, width: Int, height: Int, elapsed: Int) {
+//            super.onFirstRemoteVideoDecoded(uid, width, height, elapsed)
+//            runOnUiThread {
+//                setRemoteVideo(uid)
+//            }
+//
+//        }
+
+        override fun onUserOffline(uid: Int, reason: Int) {
+            super.onUserOffline(uid, reason)
+            runOnUiThread {
+                onRemoteUserLeft()
+            }
+        }
+
+    }
+
+    private fun onRemoteUserLeft() {
+
+        if (remoteView != null) {
+            binding.remoteVideoViewContainer.removeAllViews()
+        }
+    }
+
+    private fun removeLocalVideo() {
+
+        if (localView != null) {
+            binding.localVideoViewContainer.removeAllViews()
+        }
+    }
+
+    private fun leaveChannel() {
+        rtcEngine!!.leaveChannel()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        leaveChannel()
     }
 
     /*Permission Functions For Agora Engine */
@@ -128,119 +239,26 @@ class VideoCallScreen : AppCompatActivity() {
         }
     }
 
-    /*
-    *
-    * Implementing Agora From Here
-    *
-    * */
-
-
-
-    private fun initAgoraEngineAndJoinChannel() {
-
-        initalizeAgoraEngine()
-        rtcEngine?.setChannelProfile(Constants.CHANNEL_PROFILE_LIVE_BROADCASTING)
-        rtcEngine?.setClientRole(0)
-        setUpVideoProfile()
-        setUpLocalVideo()
-        joinChannel()
-    }
-
-    private fun joinChannel() {
-        rtcEngine?.joinChannel(getString(R.string.TOKEN), "DemoAgora", "Optional Text", 0)
-    }
-
-    private fun setUpLocalVideo() {
-        val surfaceView: SurfaceView = RtcEngine.CreateRendererView(this)
-        surfaceView.setZOrderMediaOverlay(true)
-        binding.localVideoViewContainer.addView(surfaceView)
-        rtcEngine?.setupLocalVideo(VideoCanvas(surfaceView, VideoCanvas.RENDER_MODE_FIT, 0))
-    }
-
-    private fun setUpVideoProfile() {
-        rtcEngine?.enableVideo()
-        rtcEngine?.setVideoEncoderConfiguration(
-            VideoEncoderConfiguration(
-                VD_640x480,
-                VideoEncoderConfiguration.FRAME_RATE.FRAME_RATE_FPS_15,
-                STANDARD_BITRATE,
-                VideoEncoderConfiguration.ORIENTATION_MODE.ORIENTATION_MODE_FIXED_PORTRAIT
-            )
-        )
-    }
-
-    private fun initalizeAgoraEngine() {
-        try {
-            rtcEngine =
-                RtcEngine.create(applicationContext, getString(R.string.APP_ID), mRtcEventHandler)
-        } catch (e: Exception) {
-            Log.e("Agoraengine", "${e.message}")
-        }
-    }
-
-    private val mRtcEventHandler: IRtcEngineEventHandler = object : IRtcEngineEventHandler() {
-
-        override fun onUserJoined(uid: Int, elapsed: Int) {
-            super.onUserJoined(uid, elapsed)
-            runOnUiThread {
-                setUpRemoteVideo(uid)
-            }
-        }
-
-        override fun onUserOffline(uid: Int, reason: Int) {
-            super.onUserOffline(uid, reason)
-            runOnUiThread {
-                onRemoteUserLeft()
-            }
-        }
-
-        override fun onJoinChannelSuccess(channel: String?, uid: Int, elapsed: Int) {
-            super.onJoinChannelSuccess(channel, uid, elapsed)
-            runOnUiThread {
-                Toast.makeText(this@VideoCallScreen, "Join Channel Success", Toast.LENGTH_SHORT).show()
-            }
-        }
-
-    }
-
-    /*
-    * Calling From mRtcEventHandler
-    * For Handle When User Join Or Leave The Room
-    * */
-    private fun setUpRemoteVideo(uid: Int) {
-
-        if (binding.remoteVideoViewContainer.childCount >= 1) {
-            return
-        }
-
-            val surfaceView = RtcEngine.CreateRendererView(this)
-            rtcEngine?.setupRemoteVideo(VideoCanvas(surfaceView, VideoCanvas.RENDER_MODE_FIT, 0))
-            surfaceView.tag = uid
-
-    }
-
-    private fun onRemoteUserLeft() {
-            binding.remoteVideoViewContainer.removeAllViews()
-
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        rtcEngine?.leaveChannel()
-        RtcEngine.destroy()
-        rtcEngine = null
-
-    }
-
-    fun onEndCallClicked(view: View) {
-        initAgoraEngineAndJoinChannel()
-    }
     fun onSwitchCameraClicked(view: View) {
         rtcEngine?.switchCamera()
     }
     fun onLocalAudioMuteClicked(view: View) {
         rtcEngine?.muteLocalAudioStream(true)
     }
+    fun onEndCallClicked(view: View) {
+        removeLocalVideo()
+        rtcEngine?.leaveChannel()
+    }
+
+    fun onStartCall(view: View) {
+        initAgoraEngineAndJoinChannel()
+    }
+
+    /*
+    *
+    * Implementing Agora From Here
+    *
+    * */
 
 
 }

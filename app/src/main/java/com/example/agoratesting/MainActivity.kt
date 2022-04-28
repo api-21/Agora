@@ -1,6 +1,7 @@
 package com.example.agoratesting
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.util.Log
@@ -17,6 +18,8 @@ import io.agora.rtc.IRtcEngineEventHandler
 import io.agora.rtc.RtcEngine
 import io.agora.rtc.video.VideoCanvas
 import io.agora.rtc.video.VideoEncoderConfiguration
+import io.agora.rtc.video.VideoEncoderConfiguration.STANDARD_BITRATE
+import io.agora.rtc.video.VideoEncoderConfiguration.VD_640x360
 
 class MainActivity : AppCompatActivity() {
     lateinit var binding: ActivityMainBinding
@@ -31,41 +34,45 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = DataBindingUtil.setContentView(this, R.layout.activity_main)
 
-        requestForPermission()
+       // requestForPermission()
         initRtcEngine()
 
-        binding.buttonCall.setOnClickListener {
-            if (mEndCall) {
-                startCall()
-                mEndCall = false
-                binding.buttonCall.setImageResource(R.drawable.ic_end_call)
-                binding.buttonMute.visibility = VISIBLE
-                binding.buttonSwitchCamera.visibility = VISIBLE
-
-            } else {
-                endCall()
-                mEndCall = true
-                binding.buttonCall.setImageResource(R.drawable.ic_baseline_local_phone_24)
-                binding.buttonMute.visibility = INVISIBLE
-                binding.buttonSwitchCamera.visibility = INVISIBLE
-            }
+        binding.joinRoom.setOnClickListener {
+            startActivity(Intent(this, VideoCallScreen::class.java))
         }
 
-        binding.buttonSwitchCamera.setOnClickListener {
-            rtcEngine?.switchCamera()
-        }
-
-        binding.buttonMute.setOnClickListener {
-            mMuted = !mMuted
-            rtcEngine?.muteLocalAudioStream(mMuted)
-            val res: Int = if (mMuted) {
-                R.drawable.ic_mute
-            } else {
-                R.drawable.ic_unmute
-            }
-
-            binding.buttonMute.setImageResource(res)
-        }
+//        binding.buttonCall.setOnClickListener {
+//            if (mEndCall) {
+//                startCall()
+//                mEndCall = false
+//                binding.buttonCall.setImageResource(R.drawable.ic_end_call)
+//                binding.buttonMute.visibility = VISIBLE
+//                binding.buttonSwitchCamera.visibility = VISIBLE
+//
+//            } else {
+//                endCall()
+//                mEndCall = true
+//                binding.buttonCall.setImageResource(R.drawable.ic_baseline_local_phone_24)
+//                binding.buttonMute.visibility = INVISIBLE
+//                binding.buttonSwitchCamera.visibility = INVISIBLE
+//            }
+//        }
+//
+//        binding.buttonSwitchCamera.setOnClickListener {
+//            rtcEngine?.switchCamera()
+//        }
+//
+//        binding.buttonMute.setOnClickListener {
+//            mMuted = !mMuted
+//            rtcEngine?.muteLocalAudioStream(mMuted)
+//            val res: Int = if (mMuted) {
+//                R.drawable.ic_mute
+//            } else {
+//                R.drawable.ic_unmute
+//            }
+//
+//            binding.buttonMute.setImageResource(res)
+//        }
     }
 
     private val mRtcEventHandler = object : IRtcEngineEventHandler() {
@@ -128,14 +135,13 @@ class MainActivity : AppCompatActivity() {
         setupVideoConfig()
         setupLocalVideoView()
         joinChannel()
-        setupSession()
-        Toast.makeText(this, "Joining Channel", Toast.LENGTH_SHORT).show()
+        // setupSession()
     }
 
     // Initialize the RtcEngine object.
     private fun initRtcEngine() {
         try {
-            Log.e("InitRtcEngine","InitRtcEngine: Successful")
+            Log.e("InitRtcEngine", "InitRtcEngine: Successful")
             rtcEngine = RtcEngine.create(baseContext, getString(R.string.APP_ID), mRtcEventHandler)
         } catch (e: Exception) {
             Log.d("InitRtcEngine", "initRtcEngine: $e")
@@ -148,7 +154,7 @@ class MainActivity : AppCompatActivity() {
 
         localView = RtcEngine.CreateRendererView(baseContext)
         localView!!.setZOrderMediaOverlay(true)
-        binding.localVideoView.addView(localView)
+//        binding.localVideoView.addView(localView)
 
         // Set the local video view.
         rtcEngine?.setupLocalVideo(VideoCanvas(localView, VideoCanvas.RENDER_MODE_HIDDEN, 0))
@@ -158,33 +164,32 @@ class MainActivity : AppCompatActivity() {
 
         Toast.makeText(this, "Setup Remote Video View", Toast.LENGTH_SHORT).show()
 
-        if (binding.remoteVideoView.childCount > 1) {
-            return
-        }
-        remoteView = RtcEngine.CreateRendererView(baseContext)
-        binding.remoteVideoView.addView(remoteView)
-
-        rtcEngine?.setupRemoteVideo(VideoCanvas(remoteView, VideoCanvas.RENDER_MODE_FILL, uid))
+//        if (binding.remoteVideoView.childCount > 1) {
+//            return
+//        }
+//        remoteView = RtcEngine.CreateRendererView(applicationContext)
+//        remoteView?.setZOrderMediaOverlay(true)
+//        binding.remoteVideoView.addView(remoteView)
+//        rtcEngine?.setupRemoteVideo(VideoCanvas(remoteView, VideoCanvas.RENDER_MODE_FIT, uid))
     }
 
     private fun setupVideoConfig() {
 
-        Log.e("setupVideoConfig","setupVideoConfig: Successful")
+        Log.e("setupVideoConfig", "setupVideoConfig: Successful")
 
         rtcEngine?.enableVideo()
 
         rtcEngine?.setVideoEncoderConfiguration(
             VideoEncoderConfiguration(
-                VideoEncoderConfiguration.VD_640x360,
-                VideoEncoderConfiguration.FRAME_RATE.FRAME_RATE_FPS_15,
-                VideoEncoderConfiguration.STANDARD_BITRATE,
+                VD_640x360,
+                VideoEncoderConfiguration.FRAME_RATE.FRAME_RATE_FPS_1,
+                STANDARD_BITRATE,
                 VideoEncoderConfiguration.ORIENTATION_MODE.ORIENTATION_MODE_FIXED_PORTRAIT
             )
         )
     }
 
     private fun joinChannel() {
-        Log.e("joinChannel", "joinChannel: Successful")
         // Join a channel with a token.
         rtcEngine?.joinChannel(getString(R.string.TOKEN), "ChannelOne", "Extra Optional Data", 0)
     }
@@ -202,18 +207,18 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun removeLocalVideo() {
-        if (localView != null) {
-            binding.localVideoView.removeView(localView)
-        }
+//        if (localView != null) {
+//            binding.localVideoView.removeView(localView)
+//        }
         localView = null
     }
 
     private fun removeRemoteVideo() {
         Toast.makeText(this, "User End The Call", Toast.LENGTH_SHORT).show()
-        binding.remoteVideoView.removeView(remoteView)
-        if (remoteView != null) {
-            binding.remoteVideoView.removeView(remoteView)
-        }
+        // binding.remoteVideoView.removeView(remoteView)
+//        if (remoteView != null) {
+//            binding.remoteVideoView.removeView(remoteView)
+//        }
         remoteView = null
     }
 
@@ -250,11 +255,20 @@ class MainActivity : AppCompatActivity() {
     ) == PackageManager.PERMISSION_GRANTED
 
 
-    private fun hasRecordAudio() = ActivityCompat.checkSelfPermission(this,Manifest.permission.RECORD_AUDIO) ==PackageManager.PERMISSION_GRANTED
+    private fun hasRecordAudio() = ActivityCompat.checkSelfPermission(
+        this,
+        Manifest.permission.RECORD_AUDIO
+    ) == PackageManager.PERMISSION_GRANTED
 
-    private fun hasBluetooth() = ActivityCompat.checkSelfPermission(this,Manifest.permission.BLUETOOTH) == PackageManager.PERMISSION_GRANTED
+    private fun hasBluetooth() = ActivityCompat.checkSelfPermission(
+        this,
+        Manifest.permission.BLUETOOTH
+    ) == PackageManager.PERMISSION_GRANTED
 
-    private fun hasNetworkState() = ActivityCompat.checkSelfPermission(this,Manifest.permission.ACCESS_NETWORK_STATE) == PackageManager.PERMISSION_GRANTED
+    private fun hasNetworkState() = ActivityCompat.checkSelfPermission(
+        this,
+        Manifest.permission.ACCESS_NETWORK_STATE
+    ) == PackageManager.PERMISSION_GRANTED
 
 
     private fun requestForPermission() {
@@ -304,25 +318,12 @@ class MainActivity : AppCompatActivity() {
                     // The permissions can also be granted in the system settings manually.
                     initAndJoinChannel()
 
-                }else{
+                } else {
                     Toast.makeText(this, "$i Permission Not Granted", Toast.LENGTH_SHORT).show()
                 }
             }
         }
 
-//        if (requestCode == PERMISSION_REQUEST_ID) {
-//            if (
-//                grantResults[0] != PackageManager.PERMISSION_GRANTED ||
-//                grantResults[1] != PackageManager.PERMISSION_GRANTED ||
-//                grantResults[2] != PackageManager.PERMISSION_GRANTED
-//            ) {
-//
-//                Toast.makeText(applicationContext, "Permissions needed", Toast.LENGTH_LONG).show()
-//                return
-//            }
-//
-//
-//        }
     }
 
 }
