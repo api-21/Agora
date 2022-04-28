@@ -1,3 +1,6 @@
 <resources>
     <string name="app_name">AgoraTesting</string>
+
+    <string name="APP_ID">4358d50491b54fd2a25f3ff14bb23734</string>
+    <string name="TOKEN">0064358d50491b54fd2a25f3ff14bb23734IACn24idKUPDyjkwVhJlaPbSKhSkkDw003LJXv/wDbDhHjQA6kkAAAAAEAA47NvUAZtqYgEAAQAAm2pi</string>
 </resources>
