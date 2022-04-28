@@ -51,6 +51,7 @@ class VideoCallScreen : AppCompatActivity() {
         joinChannel()
         setVideoConfiguration()
         initRtcEngine()
+        mIrtcEventHandler
         setLocalVideo()
 
     }
@@ -75,11 +76,12 @@ class VideoCallScreen : AppCompatActivity() {
 
     private fun joinChannel() {
 
-        rtcEngine?.joinChannel(getString(R.string.TOKEN), "AgoraDemo", "Optional Data", 0)
+        rtcEngine?.joinChannel(getString(R.string.TOKEN), "agorademo",  "Optional Data", 0)
     }
 
     private fun setVideoConfiguration() {
         rtcEngine?.enableVideo()
+        rtcEngine?.enableAudio()
         rtcEngine?.setVideoEncoderConfiguration(
             VideoEncoderConfiguration(
                 VD_640x480,
